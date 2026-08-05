@@ -65,6 +65,9 @@ export default function VotePage() {
     setError('');
     try {
       await api.vote(election.id, selected.id);
+      // Device dipakai bergantian (antrean beberapa HP) — bersihin sesi siswa ini
+      // sekarang juga, jangan tunggu klik, biar refresh tak sengaja gak kebuka punya orang lain.
+      localStorage.removeItem('siswa_token');
       setStage('terkirim');
     } catch (e) {
       setError((e as Error).message);
@@ -72,6 +75,15 @@ export default function VotePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function nextVoter() {
+    localStorage.removeItem('siswa_token');
+    setCode('');
+    setSelected(null);
+    setElection(null);
+    setError('');
+    setStage('login');
   }
 
   if (stage === 'login') {
@@ -105,6 +117,9 @@ export default function VotePage() {
       <Center>
         <h1 className="text-2xl font-bold text-teal">Anda sudah memilih</h1>
         <p className="mt-2 text-slate-500">Suara Anda sudah tercatat, tidak bisa vote ulang.</p>
+        <button onClick={nextVoter} className="mt-6 w-full rounded-lg bg-teal p-3 font-semibold text-white">
+          Selesai — Pemilih Berikutnya
+        </button>
       </Center>
     );
   }
@@ -114,6 +129,9 @@ export default function VotePage() {
       <Center>
         <h1 className="text-2xl font-bold text-teal">Suara terkirim ✓</h1>
         <p className="mt-2 text-slate-500">Terima kasih sudah memilih.</p>
+        <button onClick={nextVoter} className="mt-6 w-full rounded-lg bg-teal p-3 font-semibold text-white">
+          Selesai — Pemilih Berikutnya
+        </button>
       </Center>
     );
   }
