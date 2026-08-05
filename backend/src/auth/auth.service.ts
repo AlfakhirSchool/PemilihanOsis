@@ -18,7 +18,7 @@ export class AuthService {
       include: { election: true },
     });
     if (!votingCode) throw new UnauthorizedException('Kode tidak valid');
-    if (votingCode.used) throw new UnauthorizedException('Kode sudah pernah dipakai');
+    if (votingCode.used) throw new UnauthorizedException('KODE SUDAH TERPAKAI');
 
     const election = votingCode.election;
     const now = new Date();
