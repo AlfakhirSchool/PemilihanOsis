@@ -9,7 +9,14 @@ interface Candidate {
   nomor_urut: number;
   nama_ketua: string;
   nama_wakil: string | null;
+  foto_url: string | null;
   jumlah_suara: number;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+function photoSrc(url: string | null) {
+  if (!url) return null;
+  return url.startsWith('http') ? url : `${API_URL}${url}`;
 }
 interface Results {
   title: string | null;
@@ -70,18 +77,23 @@ export default function LayarPage() {
   // rotasi kumulatif dari jam 12. strokeDasharray/offset dipakai per-segmen (bukan satu
   // path gabungan) supaya tiap arc bisa punya rounded cap sendiri.
   let cursorDeg = 0;
+  const avatarOffset = R + STROKE / 2 + 34; // radius tempat foto duduk, di luar ring
   const arcs = candidates.map((c, i) => {
     const share = totalRevealed > 0 ? c.jumlah_suara / totalRevealed : n > 0 ? 1 / n : 0;
     const arcDeg = share * (360 - totalGapDeg);
     const startDeg = cursorDeg;
     cursorDeg += arcDeg + GAP_DEG;
     const arcLen = (arcDeg / 360) * CIRC;
+    const midDeg = startDeg + arcDeg / 2 - 90; // -90: jam 12 = 0 rad di sistem sin/cos standar
+    const midRad = (midDeg * Math.PI) / 180;
     return {
       candidate: c,
       color: SERIES_COLORS[i % SERIES_COLORS.length],
       pct: totalRevealed > 0 ? Math.round(share * 1000) / 10 : 0,
       dasharray: `${arcLen} ${CIRC - arcLen}`,
       dashoffset: CIRC * 0.25 - (startDeg / 360) * CIRC, // 0.25*CIRC = mulai dari jam 12
+      avatarX: Math.cos(midRad) * avatarOffset,
+      avatarY: Math.sin(midRad) * avatarOffset,
     };
   });
 
@@ -103,9 +115,14 @@ export default function LayarPage() {
         <p className="text-center text-slate-400">Belum ada kandidat.</p>
       ) : (
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-10 md:flex-row md:items-center md:justify-center">
-          <div className="relative shrink-0">
-            <svg width={2 * R + STROKE} height={2 * R + STROKE} viewBox={`0 0 ${2 * R + STROKE} ${2 * R + STROKE}`}>
-              <g transform={`translate(${R + STROKE / 2}, ${R + STROKE / 2})`}>
+          <div className="relative shrink-0" style={{ width: 2 * avatarOffset + 60, height: 2 * avatarOffset + 60 }}>
+            <svg
+              width={2 * avatarOffset + 60}
+              height={2 * avatarOffset + 60}
+              viewBox={`0 0 ${2 * avatarOffset + 60} ${2 * avatarOffset + 60}`}
+              className="absolute inset-0"
+            >
+              <g transform={`translate(${avatarOffset + 30}, ${avatarOffset + 30})`}>
                 <circle r={R} fill="none" stroke="#2a2a28" strokeWidth={STROKE} />
                 {arcs.map((a) => (
                   <circle
@@ -125,6 +142,35 @@ export default function LayarPage() {
                 ))}
               </g>
             </svg>
+
+            {arcs.map((a) => {
+              const src = photoSrc(a.candidate.foto_url);
+              return (
+                <button
+                  key={a.candidate.candidate_id}
+                  onMouseEnter={() => setHoverId(a.candidate.candidate_id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  className="absolute flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full ring-4 transition-transform duration-200"
+                  style={{
+                    left: avatarOffset + 30 + a.avatarX,
+                    top: avatarOffset + 30 + a.avatarY,
+                    ['--tw-ring-color' as string]: a.color,
+                    transform: `translate(-50%, -50%) scale(${hoverId === a.candidate.candidate_id ? 1.12 : 1})`,
+                    background: '#1a1a19',
+                  }}
+                >
+                  {src ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={src} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-bold" style={{ color: a.color }}>
+                      {a.candidate.nomor_urut}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
               {hovered ? (
                 <>
@@ -149,7 +195,17 @@ export default function LayarPage() {
                 className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors duration-150"
                 style={{ background: hoverId === a.candidate.candidate_id ? 'rgba(255,255,255,0.06)' : 'transparent' }}
               >
-                <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: a.color }} aria-hidden />
+                {photoSrc(a.candidate.foto_url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoSrc(a.candidate.foto_url)!}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2"
+                    style={{ ['--tw-ring-color' as string]: a.color }}
+                  />
+                ) : (
+                  <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: a.color }} aria-hidden />
+                )}
                 <span className="flex-1 text-lg font-medium">
                   No. {a.candidate.nomor_urut} — {a.candidate.nama_ketua}
                   {a.candidate.nama_wakil ? ` & ${a.candidate.nama_wakil}` : ''}

@@ -19,7 +19,12 @@ export default function KodePage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (selectedId) refresh();
+    if (!selectedId) return;
+    refresh();
+    // Status "sudah dipakai" berubah tiap ada siswa vote — poll biar tabel selalu kebaruan
+    // tanpa admin harus reload manual.
+    const t = setInterval(refresh, 5000);
+    return () => clearInterval(t);
   }, [selectedId]);
 
   async function refresh() {

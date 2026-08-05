@@ -33,6 +33,7 @@ export class PublicController {
         nomor_urut: c.nomorUrut,
         nama_ketua: c.namaKetua,
         nama_wakil: c.namaWakil,
+        foto_url: c.fotoUrl,
         jumlah_suara: countMap.get(c.id) ?? 0,
       })),
     };
