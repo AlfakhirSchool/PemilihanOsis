@@ -34,10 +34,6 @@ export default function PeriodePage() {
         <h2 className="font-semibold text-slate-700">Buat Periode Baru</h2>
         {error && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
         <input className="rounded border p-2" placeholder="Judul" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-        <select className="rounded border p-2" value={form.jenjang} onChange={(e) => setForm({ ...form, jenjang: e.target.value })}>
-          <option value="SD">SD</option>
-          <option value="SMP">SMP</option>
-        </select>
         <label className="text-sm text-slate-500">Mulai</label>
         <input type="datetime-local" className="rounded border p-2" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
         <label className="text-sm text-slate-500">Selesai</label>

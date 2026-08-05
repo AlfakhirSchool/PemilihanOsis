@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 export interface ElectionRow {
   id: string;
   title: string;
-  jenjang: 'SD' | 'SMP';
+  jenjang: 'SMP';
   status: 'draft' | 'active' | 'closed';
   startTime: string;
   endTime: string;

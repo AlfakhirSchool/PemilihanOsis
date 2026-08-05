@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'OSALFA — Pemilihan Ketua OSIS',
-  description: 'OSALFA, sistem pencoblosan OSIS digital SD & SMP Islam Modern Al Fakhir',
+  description: 'OSALFA, sistem pencoblosan OSIS digital SMP Islam Modern Al Fakhir',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

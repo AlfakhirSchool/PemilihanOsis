@@ -80,7 +80,7 @@ export default function VotePage() {
         <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow-lg">
           <Image src="/osalfa-logo.png" alt="OSALFA" width={524} height={476} priority className="mx-auto h-20 w-auto" />
           <h1 className="text-center text-xl font-bold text-teal">OSALFA — Pemilihan Ketua OSIS</h1>
-          <p className="text-center text-sm text-slate-500">SD & SMP Islam Modern Al Fakhir</p>
+          <p className="text-center text-sm text-slate-500">SMP Islam Modern Al Fakhir</p>
           {error && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
           <input
             className="w-full rounded-lg border border-slate-300 p-3 text-center text-lg tracking-widest uppercase"

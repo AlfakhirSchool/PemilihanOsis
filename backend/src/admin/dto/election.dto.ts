@@ -5,8 +5,8 @@ export class CreateElectionDto {
   @IsNotEmpty()
   title: string;
 
-  @IsIn(['SD', 'SMP'])
-  jenjang: 'SD' | 'SMP';
+  @IsIn(['SMP'])
+  jenjang: 'SMP';
 
   @IsDateString()
   start_time: string;

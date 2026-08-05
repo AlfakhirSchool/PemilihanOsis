@@ -1,13 +1,13 @@
 # OSALFA — Pemilihan OSIS Digital Al Fakhir
 
-Sistem pencoblosan ketua OSIS untuk SD & SMP Islam Modern Al Fakhir. Backend NestJS + Prisma,
+Sistem pencoblosan ketua OSIS untuk SMP Islam Modern Al Fakhir. Backend NestJS + Prisma,
 frontend Next.js + Tailwind, deploy sebagai CT `osis-voting` di Proxmox. Berdiri sendiri —
 tidak ada koneksi ke sistem sekolah lain (CT101/alfakhirchool). Login siswa pakai **kode
 pemilih acak**, bukan NIS/akun sekolah.
 
 ## Alur kode pemilih
 
-1. Panitia generate N kode acak per periode pemilihan (`/admin/kode`) — 8 karakter, alfanumerik,
+1. Panitia generate N kode acak per periode pemilihan (`/admin/kode`) — 5 karakter, alfanumerik,
    dibuat dengan CSPRNG (`crypto.randomInt`), tanpa karakter ambigu (0/O/1/I/L).
 2. Kode di-export CSV, dicetak/dibagikan fisik ke siswa (misal 1 kertas kode per siswa saat masuk TPS).
 3. Siswa buka `/vote`, masukkan kode, pilih paslon, submit. Kode langsung terpakai (sekali pakai).

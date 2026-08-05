@@ -6,7 +6,7 @@ import { CreateElectionDto } from './dto/election.dto';
 
 // Tanpa 0/O/1/I/L biar gak ambigu kalau dicetak/ditulis tangan.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const CODE_LENGTH = 8;
+const CODE_LENGTH = 5;
 
 function randomCode(): string {
   let code = '';
