@@ -178,7 +178,7 @@ export default function VotePage() {
     <main className="min-h-screen px-4 py-10">
       <h1 className="mb-6 text-center text-xl font-bold text-teal">{election?.title || 'Pilih Ketua OSIS'}</h1>
       {error && <p className="mx-auto mb-4 max-w-md rounded bg-red-50 p-2 text-center text-sm text-red-600">{error}</p>}
-      <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {election?.candidates.map((c) => {
           const src = photoSrc(c.fotoUrl);
           return (
