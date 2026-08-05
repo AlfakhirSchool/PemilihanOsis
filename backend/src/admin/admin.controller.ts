@@ -1,4 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { randomBytes } from 'crypto';
+import { extname } from 'path';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -7,6 +11,8 @@ import { AdminService } from './admin.service';
 import { CreateCandidateDto } from './dto/candidate.dto';
 import { CreateElectionDto, RevealVoteDto, UpdateElectionStatusDto } from './dto/election.dto';
 import { GenerateCodesDto } from './dto/code.dto';
+
+const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
 @UseGuards(AdminJwtGuard, RolesGuard)
 @Roles('Admin', 'Panitia')
@@ -41,6 +47,31 @@ export class AdminController {
   @Post('candidates')
   createCandidate(@Body() dto: CreateCandidateDto) {
     return this.adminService.createCandidate(dto);
+  }
+
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/candidates',
+        filename: (_req, file, cb) => {
+          const name = randomBytes(16).toString('hex') + extname(file.originalname).toLowerCase();
+          cb(null, name);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_IMAGE_MIME.includes(file.mimetype)) {
+          cb(new BadRequestException('Cuma JPG/PNG/WEBP yang diterima'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  upload(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File tidak ada');
+    return { url: `/uploads/candidates/${file.filename}` };
   }
 
   @Get('candidates/:electionId')

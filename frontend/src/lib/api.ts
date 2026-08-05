@@ -15,7 +15,23 @@ async function request(path: string, opts: RequestInit = {}, tokenKey?: 'siswa_t
   return data;
 }
 
+async function uploadFile(file: File): Promise<{ url: string }> {
+  const token = localStorage.getItem('admin_token');
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch(`${API_URL}/admin/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Upload gagal');
+  return data;
+}
+
 export const api = {
+  uploadFile,
+
   loginSiswa: (code: string) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ code }) }),
   loginAdmin: (username: string, password: string) =>

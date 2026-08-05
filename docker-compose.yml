@@ -23,6 +23,8 @@ services:
       - db
     ports:
       - '3000:3000'
+    volumes:
+      - backend_uploads:/app/uploads
 
   frontend:
     build:
@@ -37,3 +39,4 @@ services:
 
 volumes:
   db_data:
+  backend_uploads:

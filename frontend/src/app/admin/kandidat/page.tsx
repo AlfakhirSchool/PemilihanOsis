@@ -19,6 +19,22 @@ export default function KandidatPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [form, setForm] = useState({ nomor_urut: '', nama_ketua: '', nama_wakil: '', foto_url: '', visi_misi: '' });
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setUploading(true);
+    try {
+      const { url } = await api.uploadFile(file);
+      setForm((f) => ({ ...f, foto_url: url }));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     if (selectedId) refresh();
@@ -61,17 +77,31 @@ export default function KandidatPage() {
         <input className="rounded border p-2" placeholder="No. Urut" value={form.nomor_urut} onChange={(e) => setForm({ ...form, nomor_urut: e.target.value })} required />
         <input className="rounded border p-2" placeholder="Nama Ketua" value={form.nama_ketua} onChange={(e) => setForm({ ...form, nama_ketua: e.target.value })} required />
         <input className="rounded border p-2" placeholder="Nama Wakil" value={form.nama_wakil} onChange={(e) => setForm({ ...form, nama_wakil: e.target.value })} />
-        <input className="rounded border p-2" placeholder="URL Foto" value={form.foto_url} onChange={(e) => setForm({ ...form, foto_url: e.target.value })} />
+        <div>
+          <label className="mb-1 block text-sm text-slate-500">Foto</label>
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhoto} className="w-full text-sm" />
+          {uploading && <p className="mt-1 text-sm text-slate-400">Mengunggah...</p>}
+          {form.foto_url && !uploading && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`${process.env.NEXT_PUBLIC_API_URL}${form.foto_url}`} alt="Preview" className="mt-2 h-24 w-24 rounded object-cover" />
+          )}
+        </div>
         <textarea className="rounded border p-2" placeholder="Visi Misi" value={form.visi_misi} onChange={(e) => setForm({ ...form, visi_misi: e.target.value })} />
         <button className="rounded bg-teal p-2 font-semibold text-white">Tambah Kandidat</button>
       </form>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {candidates.map((c) => (
-          <div key={c.id} className="rounded-lg border bg-white p-4">
-            <p className="text-sm font-semibold text-gold-dark">No. {c.nomorUrut}</p>
-            <p className="font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
-            <button onClick={() => remove(c.id)} className="mt-2 text-sm text-red-600">Hapus</button>
+          <div key={c.id} className="flex gap-3 rounded-lg border bg-white p-4">
+            {c.fotoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`${process.env.NEXT_PUBLIC_API_URL}${c.fotoUrl}`} alt="" className="h-16 w-16 shrink-0 rounded object-cover" />
+            )}
+            <div>
+              <p className="text-sm font-semibold text-gold-dark">No. {c.nomorUrut}</p>
+              <p className="font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
+              <button onClick={() => remove(c.id)} className="mt-2 text-sm text-red-600">Hapus</button>
+            </div>
           </div>
         ))}
       </div>
