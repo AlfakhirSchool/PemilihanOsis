@@ -5,7 +5,6 @@ const nav = [
   { href: '/admin/hitung-suara', label: 'Hitung Suara' },
   { href: '/admin/kode', label: 'Kode Pemilih' },
   { href: '/admin/kandidat', label: 'Kandidat' },
-  { href: '/admin/periode', label: 'Periode' },
   { href: '/admin/hasil', label: 'Hasil' },
 ];
 

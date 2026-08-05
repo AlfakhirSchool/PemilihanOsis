@@ -48,10 +48,6 @@ export const api = {
     request(`/admin/election/${id}/reveal`, { method: 'POST', body: JSON.stringify({ vote_id: voteId }) }, 'admin_token'),
   results: (id: string) => request(`/admin/election/${id}/results`, {}, 'admin_token'),
   listElections: () => request('/admin/election', {}, 'admin_token'),
-  createElection: (body: Record<string, unknown>) =>
-    request('/admin/election', { method: 'POST', body: JSON.stringify(body) }, 'admin_token'),
-  setElectionStatus: (id: string, status: string) =>
-    request(`/admin/election/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }, 'admin_token'),
   listCandidates: (electionId: string) => request(`/admin/candidates/${electionId}`, {}, 'admin_token'),
   createCandidate: (body: Record<string, unknown>) =>
     request('/admin/candidates', { method: 'POST', body: JSON.stringify(body) }, 'admin_token'),
