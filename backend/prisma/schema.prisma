@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Jenjang {
+  SD
+  SMP
+}
+
+enum ElectionStatus {
+  draft
+  active
+  closed
+}
+
+model ElectionPeriod {
+  id         String         @id @default(uuid()) @db.Uuid
+  title      String         @db.VarChar(255)
+  jenjang    Jenjang
+  startTime  DateTime       @map("start_time")
+  endTime    DateTime       @map("end_time")
+  status     ElectionStatus @default(draft)
+  revealMode Boolean        @default(true) @map("reveal_mode")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  candidates Candidate[]
+  votes      Vote[]
+
+  @@map("election_periods")
+}
+
+model Candidate {
+  id          String  @id @default(uuid()) @db.Uuid
+  electionId  String  @map("election_id") @db.Uuid
+  nomorUrut   Int     @map("nomor_urut")
+  namaKetua   String  @map("nama_ketua") @db.VarChar(100)
+  namaWakil   String? @map("nama_wakil") @db.VarChar(100)
+  fotoUrl     String? @map("foto_url")
+  visiMisi    String? @map("visi_misi")
+
+  election ElectionPeriod @relation(fields: [electionId], references: [id])
+  votes    Vote[]
+
+  @@unique([electionId, nomorUrut])
+  @@map("candidates")
+}
+
+// reveal_mode = true: candidate_id tersimpan sejak vote masuk, revealed_at cuma gate tampilan admin.
+// NIS ada di baris ini by design → privasi siswa secara teknis hilang begitu admin punya akses DB. Lihat README.
+model Vote {
+  id          String    @id @default(uuid()) @db.Uuid
+  electionId  String    @map("election_id") @db.Uuid
+  nis         String    @db.VarChar(20)
+  candidateId String    @map("candidate_id") @db.Uuid
+  votedAt     DateTime  @default(now()) @map("voted_at")
+  revealedAt  DateTime? @map("revealed_at")
+
+  election  ElectionPeriod @relation(fields: [electionId], references: [id])
+  candidate Candidate      @relation(fields: [candidateId], references: [id])
+
+  @@unique([electionId, nis])
+  @@index([electionId, revealedAt])
+  @@map("votes")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash")
+  nama         String   @db.VarChar(100)
+  role         String   @default("Panitia") @db.VarChar(20) // 'Admin' | 'Panitia'
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("admin_users")
+}
+
+// Terpisah dari votes — audit aksi admin (buka/tutup election, reveal suara, edit kandidat), bukan data suara.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  adminId    String   @map("admin_id") @db.Uuid
+  action     String   @db.VarChar(50)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String?  @map("target_id")
+  detail     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_log")
+}
