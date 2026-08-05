@@ -44,4 +44,7 @@ export const api = {
   generateCodes: (electionId: string, count: number) =>
     request(`/admin/election/${electionId}/codes/generate`, { method: 'POST', body: JSON.stringify({ count }) }, 'admin_token'),
   listCodes: (electionId: string) => request(`/admin/election/${electionId}/codes`, {}, 'admin_token'),
+
+  publicActiveId: () => request('/public/election/active-id'),
+  publicResults: (id: string) => request(`/public/election/${id}/results`),
 };
