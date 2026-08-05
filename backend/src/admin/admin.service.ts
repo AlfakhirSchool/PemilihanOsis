@@ -1,15 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Ct101Service } from '../auth/ct101.service';
 import { CreateCandidateDto } from './dto/candidate.dto';
 import { CreateElectionDto } from './dto/election.dto';
 
+// Tanpa 0/O/1/I/L biar gak ambigu kalau dicetak/ditulis tangan.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 8;
+
+function randomCode(): string {
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
 @Injectable()
 export class AdminService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly ct101: Ct101Service,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private async audit(adminId: string, action: string, targetType: string, targetId?: string, detail?: string) {
     await this.prisma.auditLog.create({
@@ -21,13 +30,13 @@ export class AdminService {
     const election = await this.prisma.electionPeriod.findUnique({ where: { id: electionId } });
     if (!election) throw new NotFoundException('Pemilihan tidak ditemukan');
 
-    const totalSiswa = await this.ct101.countSiswaByJenjang(election.jenjang);
+    const totalCodes = await this.prisma.votingCode.count({ where: { electionId } });
     const totalMasuk = await this.prisma.vote.count({ where: { electionId } });
 
     return {
-      total_siswa: totalSiswa,
+      total_siswa: totalCodes,
       total_masuk: totalMasuk,
-      partisipasi_pct: totalSiswa > 0 ? Math.round((totalMasuk / totalSiswa) * 1000) / 10 : 0,
+      partisipasi_pct: totalCodes > 0 ? Math.round((totalMasuk / totalCodes) * 1000) / 10 : 0,
     };
   }
 
@@ -36,15 +45,7 @@ export class AdminService {
       where: { electionId, revealedAt: null },
       orderBy: { votedAt: 'asc' },
     });
-    // nama siswa perlu di-lookup ke CT101 satu-satu karena tabel votes cuma simpan nis
-    const withNama = await Promise.all(
-      votes.map(async (v) => ({
-        vote_id: v.id,
-        nis: v.nis,
-        nama: (await this.ct101.findSiswaByNis(v.nis))?.nama ?? v.nis,
-      })),
-    );
-    return withNama;
+    return votes.map((v) => ({ vote_id: v.id, code: v.code }));
   }
 
   async reveal(electionId: string, voteId: string, adminId: string) {
@@ -58,14 +59,53 @@ export class AdminService {
       await this.audit(adminId, 'reveal_vote', 'vote', voteId);
     }
 
-    const siswa = await this.ct101.findSiswaByNis(vote.nis);
     return {
-      nama: siswa?.nama ?? vote.nis,
+      code: vote.code,
       candidate: {
         id: vote.candidate.id,
         nomor_urut: vote.candidate.nomorUrut,
         nama_ketua: vote.candidate.namaKetua,
       },
+    };
+  }
+
+  // Kode dibuat sekali per election, dibagikan fisik ke siswa oleh panitia. Retry per-kode kalau
+  // tabrakan unique (langka di ruang 32^8, tapi bukan nol) — ponytail: cukup untuk skala sekolah.
+  async generateCodes(electionId: string, count: number, adminId: string) {
+    const election = await this.prisma.electionPeriod.findUnique({ where: { id: electionId } });
+    if (!election) throw new NotFoundException('Pemilihan tidak ditemukan');
+
+    const codes: string[] = [];
+    for (let i = 0; i < count; i++) {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const code = randomCode();
+        try {
+          await this.prisma.votingCode.create({ data: { electionId, code } });
+          codes.push(code);
+          break;
+        } catch (err: any) {
+          if (err?.code === 'P2002') continue; // tabrakan, coba lagi
+          throw err;
+        }
+      }
+    }
+
+    await this.audit(adminId, 'generate_codes', 'voting_code', electionId, `count=${count}`);
+    return { codes };
+  }
+
+  async listCodes(electionId: string) {
+    const codes = await this.prisma.votingCode.findMany({
+      where: { electionId },
+      orderBy: { createdAt: 'asc' },
+    });
+    const used = codes.filter((c) => c.used).length;
+    return {
+      total: codes.length,
+      used,
+      unused: codes.length - used,
+      codes: codes.map((c) => ({ code: c.code, used: c.used })),
     };
   }
 

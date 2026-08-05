@@ -12,11 +12,7 @@ export class VoteController {
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post(':id/vote')
-  cast(
-    @Param('id') id: string,
-    @Body() dto: CastVoteDto,
-    @CurrentUser() user: { nis: string; jenjang: 'SD' | 'SMP' },
-  ) {
-    return this.voteService.cast(id, dto.candidate_id, user.nis, user.jenjang);
+  cast(@Param('id') id: string, @Body() dto: CastVoteDto, @CurrentUser() user: { code: string }) {
+    return this.voteService.cast(id, dto.candidate_id, user.code);
   }
 }

@@ -1,30 +1,37 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { Ct101Service } from './ct101.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly ct101: Ct101Service,
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
   ) {}
 
-  async loginSiswa(nis: string, password: string) {
-    const siswa = await this.ct101.findSiswaByNis(nis);
-    if (!siswa) throw new UnauthorizedException('NIS atau password salah');
+  // Kode anonim: tidak ada nama/NIS di sisi manapun. Kode dibuat admin dan cuma valid untuk
+  // satu election yang sedang aktif dalam rentang waktunya — lihat AdminService.generateCodes.
+  async loginSiswa(code: string) {
+    const votingCode = await this.prisma.votingCode.findFirst({
+      where: { code },
+      include: { election: true },
+    });
+    if (!votingCode) throw new UnauthorizedException('Kode tidak valid');
+    if (votingCode.used) throw new UnauthorizedException('Kode sudah pernah dipakai');
 
-    const valid = await bcrypt.compare(password, siswa.password_hash);
-    if (!valid) throw new UnauthorizedException('NIS atau password salah');
+    const election = votingCode.election;
+    const now = new Date();
+    if (election.status !== 'active' || now < election.startTime || now > election.endTime) {
+      throw new BadRequestException('Pemilihan sedang tidak berlangsung');
+    }
 
     const accessToken = this.jwt.sign(
-      { sub: siswa.nis, nama: siswa.nama, jenjang: siswa.jenjang },
-      { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_EXPIRES_IN || '12h' },
+      { sub: votingCode.code, electionId: election.id },
+      { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_EXPIRES_IN || '2h' },
     );
 
-    return { accessToken, siswa: { nis: siswa.nis, nama: siswa.nama, jenjang: siswa.jenjang } };
+    return { accessToken };
   }
 
   async loginAdmin(username: string, password: string) {

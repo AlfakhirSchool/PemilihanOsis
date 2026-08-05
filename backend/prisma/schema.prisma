@@ -28,8 +28,9 @@ model ElectionPeriod {
   revealMode Boolean        @default(true) @map("reveal_mode")
   createdAt  DateTime       @default(now()) @map("created_at")
 
-  candidates Candidate[]
-  votes      Vote[]
+  candidates  Candidate[]
+  votes       Vote[]
+  votingCodes VotingCode[]
 
   @@map("election_periods")
 }
@@ -50,12 +51,27 @@ model Candidate {
   @@map("candidates")
 }
 
+// Kode voting acak, anonim total (tidak ada nama/NIS nempel) — dibuat admin, dibagikan fisik ke siswa.
+model VotingCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  electionId String    @map("election_id") @db.Uuid
+  code       String    @db.VarChar(16)
+  used       Boolean   @default(false)
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  election ElectionPeriod @relation(fields: [electionId], references: [id])
+
+  @@unique([electionId, code])
+  @@map("voting_codes")
+}
+
 // reveal_mode = true: candidate_id tersimpan sejak vote masuk, revealed_at cuma gate tampilan admin.
-// NIS ada di baris ini by design → privasi siswa secara teknis hilang begitu admin punya akses DB. Lihat README.
+// `code` anonim (tidak terhubung nama/NIS apa pun) — reveal cuma nunjukin kode + pilihannya, bukan identitas siswa.
 model Vote {
   id          String    @id @default(uuid()) @db.Uuid
   electionId  String    @map("election_id") @db.Uuid
-  nis         String    @db.VarChar(20)
+  code        String    @db.VarChar(16)
   candidateId String    @map("candidate_id") @db.Uuid
   votedAt     DateTime  @default(now()) @map("voted_at")
   revealedAt  DateTime? @map("revealed_at")
@@ -63,7 +79,7 @@ model Vote {
   election  ElectionPeriod @relation(fields: [electionId], references: [id])
   candidate Candidate      @relation(fields: [candidateId], references: [id])
 
-  @@unique([electionId, nis])
+  @@unique([electionId, code])
   @@index([electionId, revealedAt])
   @@map("votes")
 }

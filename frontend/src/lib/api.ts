@@ -16,8 +16,8 @@ async function request(path: string, opts: RequestInit = {}, tokenKey?: 'siswa_t
 }
 
 export const api = {
-  loginSiswa: (nis: string, password: string) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ nis, password }) }),
+  loginSiswa: (code: string) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ code }) }),
   loginAdmin: (username: string, password: string) =>
     request('/auth/admin/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
 
@@ -40,4 +40,8 @@ export const api = {
   createCandidate: (body: Record<string, unknown>) =>
     request('/admin/candidates', { method: 'POST', body: JSON.stringify(body) }, 'admin_token'),
   deleteCandidate: (id: string) => request(`/admin/candidates/${id}`, { method: 'DELETE' }, 'admin_token'),
+
+  generateCodes: (electionId: string, count: number) =>
+    request(`/admin/election/${electionId}/codes/generate`, { method: 'POST', body: JSON.stringify({ count }) }, 'admin_token'),
+  listCodes: (electionId: string) => request(`/admin/election/${electionId}/codes`, {}, 'admin_token'),
 };

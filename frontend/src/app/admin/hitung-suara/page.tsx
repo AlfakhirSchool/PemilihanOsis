@@ -7,12 +7,11 @@ import ElectionPicker from '../ElectionPicker';
 
 interface Pending {
   vote_id: string;
-  nis: string;
-  nama: string;
+  code: string;
 }
 interface Revealed {
   vote_id: string;
-  nama: string;
+  code: string;
   candidate: { id: string; nomor_urut: number; nama_ketua: string };
 }
 interface Progress {
@@ -44,7 +43,7 @@ export default function HitungSuaraPage() {
   async function reveal(voteId: string) {
     const res = await api.reveal(selectedId, voteId);
     setPending((prev) => prev.filter((v) => v.vote_id !== voteId));
-    setRevealed((prev) => [{ vote_id: voteId, nama: res.nama, candidate: res.candidate }, ...prev]);
+    setRevealed((prev) => [{ vote_id: voteId, code: res.code, candidate: res.candidate }, ...prev]);
     setTally((prev) => {
       const key = res.candidate.id;
       const cur = prev[key] || { nama: res.candidate.nama_ketua, count: 0 };
@@ -84,7 +83,7 @@ export default function HitungSuaraPage() {
                   onClick={() => reveal(v.vote_id)}
                   className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-oranye/10"
                 >
-                  {v.nama} <span className="text-slate-400">({v.nis})</span>
+                  Kode {v.code}
                 </button>
               </li>
             ))}
@@ -97,7 +96,7 @@ export default function HitungSuaraPage() {
               <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border bg-white p-2 text-sm text-slate-500">
                 {revealed.map((r) => (
                   <li key={r.vote_id} className="px-3 py-1">
-                    {r.nama} → No. {r.candidate.nomor_urut} {r.candidate.nama_ketua}
+                    Kode {r.code} → No. {r.candidate.nomor_urut} {r.candidate.nama_ketua}
                   </li>
                 ))}
               </ul>

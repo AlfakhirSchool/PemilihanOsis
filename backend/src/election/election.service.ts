@@ -5,22 +5,23 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ElectionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findActive(jenjang: 'SD' | 'SMP') {
+  // Kode login sudah scoped ke satu election_id (lihat AuthService.loginSiswa) — jenjang tidak
+  // perlu dicek terpisah lagi, election yang dipilih kode itulah satu-satunya yang relevan.
+  async findActive(electionId: string) {
     const election = await this.prisma.electionPeriod.findFirst({
-      where: { status: 'active', jenjang },
+      where: { id: electionId, status: 'active' },
       include: { candidates: { orderBy: { nomorUrut: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
     });
-    if (!election) throw new NotFoundException('Tidak ada pemilihan aktif untuk jenjang ini');
+    if (!election) throw new NotFoundException('Pemilihan tidak aktif');
     return election;
   }
 
-  async statusFor(electionId: string, nis: string) {
+  async statusFor(electionId: string, code: string) {
     const election = await this.prisma.electionPeriod.findUnique({ where: { id: electionId } });
     if (!election) throw new NotFoundException('Pemilihan tidak ditemukan');
 
     const vote = await this.prisma.vote.findUnique({
-      where: { electionId_nis: { electionId, nis } },
+      where: { electionId_code: { electionId, code } },
     });
     return { sudah_vote: !!vote };
   }

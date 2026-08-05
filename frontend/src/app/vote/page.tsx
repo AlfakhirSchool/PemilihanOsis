@@ -22,8 +22,7 @@ type Stage = 'login' | 'pilih' | 'konfirmasi' | 'terkirim' | 'sudah_vote';
 
 export default function VotePage() {
   const [stage, setStage] = useState<Stage>('login');
-  const [nis, setNis] = useState('');
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [election, setElection] = useState<Election | null>(null);
@@ -49,7 +48,7 @@ export default function VotePage() {
     setError('');
     setLoading(true);
     try {
-      const res = await api.loginSiswa(nis, password);
+      const res = await api.loginSiswa(code);
       localStorage.setItem('siswa_token', res.accessToken);
       await loadElection();
     } catch (e) {
@@ -82,18 +81,10 @@ export default function VotePage() {
           <p className="text-center text-sm text-slate-500">Al Fakhir</p>
           {error && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
           <input
-            className="w-full rounded-lg border border-slate-300 p-3"
-            placeholder="NIS"
-            value={nis}
-            onChange={(e) => setNis(e.target.value)}
-            required
-          />
-          <input
-            className="w-full rounded-lg border border-slate-300 p-3"
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 p-3 text-center text-lg tracking-widest uppercase"
+            placeholder="Kode Pemilih"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
             required
           />
           <button

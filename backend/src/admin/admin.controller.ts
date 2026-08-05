@@ -6,6 +6,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { CreateCandidateDto } from './dto/candidate.dto';
 import { CreateElectionDto, RevealVoteDto, UpdateElectionStatusDto } from './dto/election.dto';
+import { GenerateCodesDto } from './dto/code.dto';
 
 @UseGuards(AdminJwtGuard, RolesGuard)
 @Roles('Admin', 'Panitia')
@@ -69,5 +70,19 @@ export class AdminController {
     @CurrentUser() user: { id: string },
   ) {
     return this.adminService.setElectionStatus(id, dto.status, user.id);
+  }
+
+  @Post('election/:id/codes/generate')
+  generateCodes(
+    @Param('id') id: string,
+    @Body() dto: GenerateCodesDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.adminService.generateCodes(id, dto.count, user.id);
+  }
+
+  @Get('election/:id/codes')
+  listCodes(@Param('id') id: string) {
+    return this.adminService.listCodes(id);
   }
 }

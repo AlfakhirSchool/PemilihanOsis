@@ -3,9 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 export interface SiswaJwtPayload {
-  sub: string; // nis
-  nama: string;
-  jenjang: 'SD' | 'SMP';
+  sub: string; // code
+  electionId: string;
 }
 
 @Injectable()
@@ -19,6 +18,6 @@ export class SiswaJwtStrategy extends PassportStrategy(Strategy, 'jwt-siswa') {
   }
 
   async validate(payload: SiswaJwtPayload) {
-    return { nis: payload.sub, nama: payload.nama, jenjang: payload.jenjang };
+    return { code: payload.sub, electionId: payload.electionId };
   }
 }

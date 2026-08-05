@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -6,13 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class VoteService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async cast(electionId: string, candidateId: string, nis: string, jenjang: 'SD' | 'SMP') {
+  async cast(electionId: string, candidateId: string, code: string) {
     const election = await this.prisma.electionPeriod.findUnique({ where: { id: electionId } });
     if (!election) throw new NotFoundException('Pemilihan tidak ditemukan');
-
-    if (election.jenjang !== jenjang) {
-      throw new ForbiddenException('Pemilihan ini bukan untuk jenjang Anda');
-    }
 
     const now = new Date();
     if (election.status !== 'active' || now < election.startTime || now > election.endTime) {
@@ -25,9 +21,13 @@ export class VoteService {
     }
 
     try {
-      await this.prisma.vote.create({
-        data: { electionId, nis, candidateId },
-      });
+      await this.prisma.$transaction([
+        this.prisma.vote.create({ data: { electionId, code, candidateId } }),
+        this.prisma.votingCode.updateMany({
+          where: { electionId, code },
+          data: { used: true, usedAt: now },
+        }),
+      ]);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException('Anda sudah memilih, tidak bisa vote ulang');

@@ -9,12 +9,12 @@ export class ElectionController {
   constructor(private readonly electionService: ElectionService) {}
 
   @Get('active')
-  findActive(@CurrentUser() user: { jenjang: 'SD' | 'SMP' }) {
-    return this.electionService.findActive(user.jenjang);
+  findActive(@CurrentUser() user: { electionId: string }) {
+    return this.electionService.findActive(user.electionId);
   }
 
   @Get(':id/status')
-  status(@Param('id') id: string, @CurrentUser() user: { nis: string }) {
-    return this.electionService.statusFor(id, user.nis);
+  status(@Param('id') id: string, @CurrentUser() user: { code: string }) {
+    return this.electionService.statusFor(id, user.code);
   }
 }
