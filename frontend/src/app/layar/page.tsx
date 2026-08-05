@@ -19,8 +19,15 @@ interface Results {
   candidates: Candidate[];
 }
 
-const BAR_COLORS = ['#125E63', '#FAC760', '#0E464A', '#DA9407', '#5C4A1E'];
+// Urutan & hex tervalidasi lewat scripts/validate_palette.js (skill dataviz) untuk surface
+// gelap #1a1a19 (dekat slate-900 kita) — lolos lightness band, chroma floor, CVD separation
+// (worst adjacent ΔE 8.4 protan), dan contrast >=3:1. Jangan diubah tanpa re-validasi.
+const SERIES_COLORS = ['#199e70', '#c98500', '#3987e5', '#d55181', '#9085e9'];
 const POLL_MS = 4000;
+const R = 120;
+const STROKE = 34;
+const GAP_DEG = 3; // celah antar segmen (setara "surface gap" di antara arc)
+const CIRC = 2 * Math.PI * R;
 
 // Halaman publik, tanpa login — dipasang di layar proyektor saat penghitungan suara.
 // Cari election aktif sendiri, lalu poll hasil tiap POLL_MS. Cuma agregat (suara sudah
@@ -28,6 +35,7 @@ const POLL_MS = 4000;
 export default function LayarPage() {
   const [electionId, setElectionId] = useState<string | null>(null);
   const [data, setData] = useState<Results | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -52,9 +60,32 @@ export default function LayarPage() {
     );
   }
 
-  const maxCount = Math.max(1, ...(data?.candidates.map((c) => c.jumlah_suara) ?? [0]));
-  const leaderId = data?.candidates.slice().sort((a, b) => b.jumlah_suara - a.jumlah_suara)[0]?.candidate_id;
-  const totalRevealed = data?.candidates.reduce((s, c) => s + c.jumlah_suara, 0) ?? 0;
+  const candidates = data?.candidates ?? [];
+  const totalRevealed = candidates.reduce((s, c) => s + c.jumlah_suara, 0);
+  const leaderId = candidates.slice().sort((a, b) => b.jumlah_suara - a.jumlah_suara)[0]?.candidate_id;
+  const n = candidates.length;
+  const totalGapDeg = n > 1 ? GAP_DEG * n : 0;
+
+  // Susun tiap kandidat jadi arc: panjang proporsional ke suara (dikurangi share celah),
+  // rotasi kumulatif dari jam 12. strokeDasharray/offset dipakai per-segmen (bukan satu
+  // path gabungan) supaya tiap arc bisa punya rounded cap sendiri.
+  let cursorDeg = 0;
+  const arcs = candidates.map((c, i) => {
+    const share = totalRevealed > 0 ? c.jumlah_suara / totalRevealed : n > 0 ? 1 / n : 0;
+    const arcDeg = share * (360 - totalGapDeg);
+    const startDeg = cursorDeg;
+    cursorDeg += arcDeg + GAP_DEG;
+    const arcLen = (arcDeg / 360) * CIRC;
+    return {
+      candidate: c,
+      color: SERIES_COLORS[i % SERIES_COLORS.length],
+      pct: totalRevealed > 0 ? Math.round(share * 1000) / 10 : 0,
+      dasharray: `${arcLen} ${CIRC - arcLen}`,
+      dashoffset: CIRC * 0.25 - (startDeg / 360) * CIRC, // 0.25*CIRC = mulai dari jam 12
+    };
+  });
+
+  const hovered = arcs.find((a) => a.candidate.candidate_id === hoverId);
 
   return (
     <div className="min-h-screen bg-slate-900 px-10 py-8 text-white">
@@ -68,31 +99,97 @@ export default function LayarPage() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-4xl gap-8">
-        {data?.candidates.map((c, i) => (
-          <div key={c.candidate_id}>
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className="text-2xl font-semibold">
-                No. {c.nomor_urut} — {c.nama_ketua}
-                {c.nama_wakil ? ` & ${c.nama_wakil}` : ''}
-                {c.candidate_id === leaderId && totalRevealed > 0 && (
-                  <span className="ml-3 rounded-full bg-gold px-3 py-1 text-sm font-bold text-slate-900">Unggul</span>
-                )}
-              </span>
-              <span className="text-3xl font-bold tabular-nums">{c.jumlah_suara}</span>
-            </div>
-            <div className="h-8 w-full overflow-hidden rounded-full bg-slate-800">
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${(c.jumlah_suara / maxCount) * 100}%`, background: BAR_COLORS[i % BAR_COLORS.length] }}
-              />
+      {candidates.length === 0 ? (
+        <p className="text-center text-slate-400">Belum ada kandidat.</p>
+      ) : (
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-10 md:flex-row md:items-center md:justify-center">
+          <div className="relative shrink-0">
+            <svg width={2 * R + STROKE} height={2 * R + STROKE} viewBox={`0 0 ${2 * R + STROKE} ${2 * R + STROKE}`}>
+              <g transform={`translate(${R + STROKE / 2}, ${R + STROKE / 2})`}>
+                <circle r={R} fill="none" stroke="#2a2a28" strokeWidth={STROKE} />
+                {arcs.map((a) => (
+                  <circle
+                    key={a.candidate.candidate_id}
+                    r={R}
+                    fill="none"
+                    stroke={a.color}
+                    strokeWidth={STROKE}
+                    strokeLinecap="round"
+                    strokeDasharray={a.dasharray}
+                    strokeDashoffset={a.dashoffset}
+                    opacity={hoverId && hoverId !== a.candidate.candidate_id ? 0.35 : 1}
+                    className="cursor-pointer transition-opacity duration-200"
+                    onMouseEnter={() => setHoverId(a.candidate.candidate_id)}
+                    onMouseLeave={() => setHoverId(null)}
+                  />
+                ))}
+              </g>
+            </svg>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+              {hovered ? (
+                <>
+                  <span className="text-4xl font-bold tabular-nums">{hovered.candidate.jumlah_suara}</span>
+                  <span className="mt-1 max-w-[10rem] text-xs text-slate-300">No. {hovered.candidate.nomor_urut} · {hovered.pct}%</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-bold tabular-nums">{totalRevealed}</span>
+                  <span className="mt-1 text-xs text-slate-400">suara dibuka</span>
+                </>
+              )}
             </div>
           </div>
-        ))}
-        {(!data || data.candidates.length === 0) && (
-          <p className="text-center text-slate-400">Belum ada kandidat.</p>
-        )}
-      </div>
+
+          <div className="flex w-full max-w-md flex-col gap-3">
+            {arcs.map((a) => (
+              <div
+                key={a.candidate.candidate_id}
+                onMouseEnter={() => setHoverId(a.candidate.candidate_id)}
+                onMouseLeave={() => setHoverId(null)}
+                className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors duration-150"
+                style={{ background: hoverId === a.candidate.candidate_id ? 'rgba(255,255,255,0.06)' : 'transparent' }}
+              >
+                <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: a.color }} aria-hidden />
+                <span className="flex-1 text-lg font-medium">
+                  No. {a.candidate.nomor_urut} — {a.candidate.nama_ketua}
+                  {a.candidate.nama_wakil ? ` & ${a.candidate.nama_wakil}` : ''}
+                  {a.candidate.candidate_id === leaderId && totalRevealed > 0 && (
+                    <span className="ml-2 rounded-full bg-gold px-2 py-0.5 text-xs font-bold text-slate-900">Unggul</span>
+                  )}
+                </span>
+                <span className="tabular-nums text-slate-300">{a.pct}%</span>
+                <span className="w-10 text-right text-xl font-bold tabular-nums">{a.candidate.jumlah_suara}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tabel data mentah — setara aksesibilitas untuk pembaca yang tidak bisa pakai chart visual. */}
+      <table className="sr-only">
+        <caption>Hasil sementara {data?.title}</caption>
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Kandidat</th>
+            <th>Suara</th>
+            <th>Persentase</th>
+          </tr>
+        </thead>
+        <tbody>
+          {arcs.map((a) => (
+            <tr key={a.candidate.candidate_id}>
+              <td>{a.candidate.nomor_urut}</td>
+              <td>
+                {a.candidate.nama_ketua}
+                {a.candidate.nama_wakil ? ` & ${a.candidate.nama_wakil}` : ''}
+              </td>
+              <td>{a.candidate.jumlah_suara}</td>
+              <td>{a.pct}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
