@@ -15,14 +15,17 @@ diberi tahu bahwa suara bisa ditelusuri secara teknis oleh admin sistem.
 
 ## 1. Setup koneksi read-only ke CT 101
 
-Di CT 101 (alfakhir-lms), buat user Postgres baru khusus untuk sistem ini — jangan reuse
-kredensial existing manapun:
+Di CT 101 (alfakhirchool), buat user Postgres baru khusus untuk sistem ini — jangan reuse
+kredensial existing manapun. DB nyata bernama `alfakhir_school` (bukan `alfakhir_lms`), dan
+`password_hash` + jenjang (`school_level`) ada di tabel `users`, bukan `siswa` — perlu SELECT
+di keduanya:
 
 ```sql
 CREATE USER osis_readonly WITH PASSWORD 'ganti-dengan-password-kuat';
-GRANT CONNECT ON DATABASE alfakhir_lms TO osis_readonly;
+GRANT CONNECT ON DATABASE alfakhir_school TO osis_readonly;
 GRANT USAGE ON SCHEMA public TO osis_readonly;
-GRANT SELECT ON siswa TO osis_readonly;
+GRANT SELECT (id, nis, user_id) ON siswa TO osis_readonly;
+GRANT SELECT (id, nama, password_hash, school_level, is_active, role) ON users TO osis_readonly;
 ```
 
 Sebelum ini jalan, cek dulu firewall Proxmox: network internal (vmbr) antara CT `osis-voting`

@@ -4,7 +4,6 @@ import { Pool } from 'pg';
 export interface SiswaRecord {
   nis: string;
   nama: string;
-  kelas: string;
   jenjang: 'SD' | 'SMP';
   password_hash: string;
 }
@@ -28,10 +27,14 @@ export class Ct101Service {
     });
   }
 
+  // password_hash & jenjang hidup di `users` (school_level), bukan di `siswa` — join lewat siswa.user_id.
+  // kelas cuma FK (kelas_id) di siswa nyata; kita tidak butuh nama kelas untuk voting jadi tidak di-select.
   async findSiswaByNis(nis: string): Promise<SiswaRecord | null> {
     try {
       const result = await this.pool.query<SiswaRecord>(
-        'SELECT nis, nama, kelas, jenjang, password_hash FROM siswa WHERE nis = $1',
+        `SELECT s.nis, u.nama, u.school_level AS jenjang, u.password_hash
+         FROM siswa s JOIN users u ON u.id = s.user_id
+         WHERE s.nis = $1 AND u.is_active = true AND u.role = 'siswa'`,
         [nis],
       );
       return result.rows[0] ?? null;
@@ -46,7 +49,8 @@ export class Ct101Service {
   async countSiswaByJenjang(jenjang: 'SD' | 'SMP'): Promise<number> {
     try {
       const result = await this.pool.query<{ count: string }>(
-        'SELECT COUNT(*) FROM siswa WHERE jenjang = $1',
+        `SELECT COUNT(*) FROM siswa s JOIN users u ON u.id = s.user_id
+         WHERE u.school_level = $1 AND u.is_active = true AND u.role = 'siswa'`,
         [jenjang],
       );
       return Number(result.rows[0]?.count ?? 0);
