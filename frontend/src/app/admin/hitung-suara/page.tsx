@@ -32,27 +32,31 @@ export default function HitungSuaraPage() {
   useEffect(() => {
     if (!selectedId) return;
     refresh();
+    // Hasil sudah-dibuka itu state server (revealed_at di DB), bukan cuma memori sesi ini —
+    // poll biar reload halaman atau admin lain yang reveal tetap kebaca di sini.
+    const t = setInterval(refresh, 5000);
+    return () => clearInterval(t);
   }, [selectedId]);
 
   async function refresh() {
-    const [p, pend] = await Promise.all([api.progress(selectedId), api.pending(selectedId)]);
+    const [p, pend, res] = await Promise.all([api.progress(selectedId), api.pending(selectedId), api.results(selectedId)]);
     setProgress(p);
     setPending(pend);
+    const t: Record<string, { nama: string; count: number }> = {};
+    for (const r of res) t[r.candidate_id] = { nama: r.nama_ketua, count: r.jumlah_suara };
+    setTally(t);
   }
 
   async function reveal(voteId: string) {
     const res = await api.reveal(selectedId, voteId);
     setPending((prev) => prev.filter((v) => v.vote_id !== voteId));
     setRevealed((prev) => [{ vote_id: voteId, code: res.code, candidate: res.candidate }, ...prev]);
-    setTally((prev) => {
-      const key = res.candidate.id;
-      const cur = prev[key] || { nama: res.candidate.nama_ketua, count: 0 };
-      return { ...prev, [key]: { ...cur, count: cur.count + 1 } };
-    });
+    refresh();
   }
 
+  const totalTallied = Object.values(tally).reduce((s, t) => s + t.count, 0);
   const maxCount = Math.max(1, ...Object.values(tally).map((t) => t.count));
-  const leaderId = Object.entries(tally).sort((a, b) => b[1].count - a[1].count)[0]?.[0];
+  const leaderId = totalTallied > 0 ? Object.entries(tally).sort((a, b) => b[1].count - a[1].count)[0]?.[0] : null;
 
   return (
     <div>
@@ -123,7 +127,7 @@ export default function HitungSuaraPage() {
                 </div>
               </div>
             ))}
-            {Object.keys(tally).length === 0 && <p className="text-sm text-slate-400">Belum ada suara dibuka.</p>}
+            {totalTallied === 0 && <p className="text-sm text-slate-400">Belum ada suara dibuka.</p>}
           </div>
         </div>
       </div>

@@ -13,6 +13,12 @@ interface Candidate {
   visiMisi: string | null;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+function photoSrc(url: string | null) {
+  if (!url) return null;
+  return url.startsWith('http') ? url : `${API_URL}${url}`;
+}
+
 interface Election {
   id: string;
   title: string;
@@ -140,9 +146,15 @@ export default function VotePage() {
     return (
       <Center>
         <h1 className="text-lg font-bold text-slate-700">Konfirmasi pilihan Anda</h1>
-        <div className="mt-4 rounded-xl border-2 border-teal p-6">
-          <p className="text-sm text-slate-500">No. Urut {selected.nomorUrut}</p>
-          <p className="text-lg font-bold">{selected.namaKetua}{selected.namaWakil ? ` & ${selected.namaWakil}` : ''}</p>
+        <div className="mt-4 overflow-hidden rounded-xl border-2 border-teal">
+          {photoSrc(selected.fotoUrl) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoSrc(selected.fotoUrl)!} alt="" className="h-40 w-full object-cover" />
+          )}
+          <div className="p-4 text-center">
+            <p className="text-sm text-slate-500">No. Urut {selected.nomorUrut}</p>
+            <p className="text-lg font-bold">{selected.namaKetua}{selected.namaWakil ? ` & ${selected.namaWakil}` : ''}</p>
+          </div>
         </div>
         {error && <p className="mt-3 rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
         <div className="mt-6 flex gap-3">
@@ -167,20 +179,33 @@ export default function VotePage() {
       <h1 className="mb-6 text-center text-xl font-bold text-teal">{election?.title || 'Pilih Ketua OSIS'}</h1>
       {error && <p className="mx-auto mb-4 max-w-md rounded bg-red-50 p-2 text-center text-sm text-red-600">{error}</p>}
       <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
-        {election?.candidates.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => {
-              setSelected(c);
-              setStage('konfirmasi');
-            }}
-            className="rounded-xl bg-white p-6 text-left shadow hover:ring-2 hover:ring-teal"
-          >
-            <p className="text-sm font-semibold text-gold-dark">No. Urut {c.nomorUrut}</p>
-            <p className="mt-1 text-lg font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
-            {c.visiMisi && <p className="mt-2 line-clamp-3 text-sm text-slate-500">{c.visiMisi}</p>}
-          </button>
-        ))}
+        {election?.candidates.map((c) => {
+          const src = photoSrc(c.fotoUrl);
+          return (
+            <button
+              key={c.id}
+              onClick={() => {
+                setSelected(c);
+                setStage('konfirmasi');
+              }}
+              className="overflow-hidden rounded-xl bg-white text-left shadow transition hover:ring-2 hover:ring-teal"
+            >
+              <div className="flex h-48 items-center justify-center bg-slate-100">
+                {src ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-4xl font-bold text-slate-300">No. {c.nomorUrut}</span>
+                )}
+              </div>
+              <div className="p-5">
+                <p className="text-sm font-semibold text-gold-dark">No. Urut {c.nomorUrut}</p>
+                <p className="mt-1 text-lg font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
+                {c.visiMisi && <p className="mt-2 line-clamp-3 text-sm text-slate-500">{c.visiMisi}</p>}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </main>
   );
