@@ -36,12 +36,37 @@ const STROKE = 34;
 const GAP_DEG = 3; // celah antar segmen (setara "surface gap" di antara arc)
 const CIRC = 2 * Math.PI * R;
 
+interface TimelinePoint {
+  candidate_id: string;
+  t: string;
+  cumulative: number;
+}
+
+// Kurva halus lewat titik tengah tiap segmen (quadratic bezier), bukan garis patah-patah —
+// ini yang bikin efek "bergelombang" tanpa perlu librari charting.
+function smoothPath(pts: [number, number][]): string {
+  if (pts.length === 0) return '';
+  if (pts.length < 3) return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]},${p[1]}`).join(' ');
+  let d = `M ${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 2; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[i + 1];
+    const mx = (x1 + x0) / 2;
+    const my = (y1 + y0) / 2;
+    d += i === 0 ? ` Q ${x0},${y0} ${mx},${my}` : ` T ${mx},${my}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` T ${last[0]},${last[1]}`;
+  return d;
+}
+
 // Halaman publik, tanpa login — dipasang di layar proyektor saat penghitungan suara.
 // Cari election aktif sendiri, lalu poll hasil tiap POLL_MS. Cuma agregat (suara sudah
 // direveal admin), tidak ada data per-siswa.
 export default function LayarPage() {
   const [electionId, setElectionId] = useState<string | null>(null);
   const [data, setData] = useState<Results | null>(null);
+  const [timeline, setTimeline] = useState<TimelinePoint[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -51,7 +76,10 @@ export default function LayarPage() {
 
   useEffect(() => {
     if (!electionId) return;
-    const poll = () => api.publicResults(electionId).then(setData).catch(() => {});
+    const poll = () => {
+      api.publicResults(electionId).then(setData).catch(() => {});
+      api.publicTimeline(electionId).then((r) => setTimeline(r.points)).catch(() => {});
+    };
     poll();
     timer.current = setInterval(poll, POLL_MS);
     return () => {
@@ -98,6 +126,25 @@ export default function LayarPage() {
   });
 
   const hovered = arcs.find((a) => a.candidate.candidate_id === hoverId);
+
+  // Sumbu-x = urutan event reveal global (bukan waktu asli — jarak antar reveal admin
+  // bisa timpang, indeks bikin gelombangnya rapat & enak dibaca di layar proyektor).
+  const W = 760;
+  const H = 220;
+  const PAD = 28;
+  const maxCum = Math.max(1, ...arcs.map((a) => a.candidate.jumlah_suara));
+  const xFor = (i: number) => (timeline.length <= 1 ? PAD : PAD + (i / (timeline.length - 1)) * (W - 2 * PAD));
+  const yFor = (v: number) => H - PAD - (v / maxCum) * (H - 2 * PAD);
+
+  const series = arcs.map((a) => {
+    let running = 0;
+    const pts: [number, number][] = timeline.map((p, i) => {
+      if (p.candidate_id === a.candidate.candidate_id) running = p.cumulative;
+      return [xFor(i), yFor(running)];
+    });
+    if (pts.length === 0) pts.push([PAD, yFor(0)], [W - PAD, yFor(0)]);
+    return { ...a, pts };
+  });
 
   return (
     <div className="min-h-screen bg-slate-900 px-10 py-8 text-white">
@@ -218,6 +265,37 @@ export default function LayarPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {candidates.length > 0 && timeline.length > 1 && (
+        <div className="mx-auto mt-10 max-w-4xl">
+          <h2 className="mb-2 text-sm font-semibold text-slate-400">Trend suara masuk</h2>
+          <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
+            <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#3a3a37" strokeWidth={1} />
+            {series.map((s) => (
+              <path key={`fill-${s.candidate.candidate_id}`} d={`${smoothPath(s.pts)} L ${W - PAD},${H - PAD} L ${PAD},${H - PAD} Z`} fill={s.color} opacity={hoverId && hoverId !== s.candidate.candidate_id ? 0.04 : 0.14} />
+            ))}
+            {series.map((s) => (
+              <path
+                key={`line-${s.candidate.candidate_id}`}
+                d={smoothPath(s.pts)}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={hoverId && hoverId !== s.candidate.candidate_id ? 0.35 : 1}
+                className="cursor-pointer transition-opacity duration-200"
+                onMouseEnter={() => setHoverId(s.candidate.candidate_id)}
+                onMouseLeave={() => setHoverId(null)}
+              />
+            ))}
+            {series.map((s) => {
+              const [x, y] = s.pts[s.pts.length - 1];
+              return <circle key={`dot-${s.candidate.candidate_id}`} cx={x} cy={y} r={4} fill={s.color} />;
+            })}
+          </svg>
         </div>
       )}
 

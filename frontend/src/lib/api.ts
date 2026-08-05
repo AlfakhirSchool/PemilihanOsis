@@ -63,4 +63,5 @@ export const api = {
 
   publicActiveId: () => request('/public/election/active-id'),
   publicResults: (id: string) => request(`/public/election/${id}/results`),
+  publicTimeline: (id: string) => request(`/public/election/${id}/timeline`),
 };

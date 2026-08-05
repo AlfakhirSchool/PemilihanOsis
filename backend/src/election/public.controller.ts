@@ -39,6 +39,25 @@ export class PublicController {
     };
   }
 
+  // Titik kumulatif suara per kandidat berdasarkan urutan revealed_at — dipakai frontend
+  // buat area chart "trend suara masuk". Bukan time-bucketed, tiap reveal = satu titik,
+  // frontend yang gambar garis kumulatif per kandidat.
+  @Get(':id/timeline')
+  async timeline(@Param('id') id: string) {
+    const votes = await this.prisma.vote.findMany({
+      where: { electionId: id, revealedAt: { not: null } },
+      orderBy: { revealedAt: 'asc' },
+      select: { candidateId: true, revealedAt: true },
+    });
+    const cumulative = new Map<string, number>();
+    const points = votes.map((v) => {
+      const n = (cumulative.get(v.candidateId) ?? 0) + 1;
+      cumulative.set(v.candidateId, n);
+      return { candidate_id: v.candidateId, t: v.revealedAt, cumulative: n };
+    });
+    return { points };
+  }
+
   @Get('active-id')
   async activeId() {
     const election = await this.prisma.electionPeriod.findFirst({
