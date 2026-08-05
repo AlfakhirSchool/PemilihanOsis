@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useElections } from '@/lib/useElections';
 import ElectionPicker from '../ElectionPicker';
+import PhotoCropper from '../PhotoCropper';
 
 interface Candidate {
   id: string;
@@ -20,14 +21,20 @@ export default function KandidatPage() {
   const [form, setForm] = useState({ nomor_urut: '', nama_ketua: '', nama_wakil: '', foto_url: '', visi_misi: '' });
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
-  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    e.target.value = ''; // biar pilih file yang sama lagi tetap trigger onChange
+    if (file) setCropFile(file);
+  }
+
+  async function handleCropped(blob: Blob) {
+    setCropFile(null);
     setError('');
     setUploading(true);
     try {
-      const { url } = await api.uploadFile(file);
+      const { url } = await api.uploadFile(new File([blob], 'foto.jpg', { type: 'image/jpeg' }));
       setForm((f) => ({ ...f, foto_url: url }));
     } catch (err) {
       setError((err as Error).message);
@@ -70,6 +77,8 @@ export default function KandidatPage() {
 
   return (
     <div>
+      {cropFile && <PhotoCropper file={cropFile} onCancel={() => setCropFile(null)} onCropped={handleCropped} />}
+
       <ElectionPicker elections={elections} selectedId={selectedId} onSelect={select} />
 
       <form onSubmit={submit} className="mb-6 grid max-w-xl gap-2 rounded-lg border bg-white p-4">
