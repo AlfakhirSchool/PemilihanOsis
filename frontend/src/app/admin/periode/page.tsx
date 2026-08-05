@@ -42,7 +42,7 @@ export default function PeriodePage() {
         <input type="datetime-local" className="rounded border p-2" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
         <label className="text-sm text-slate-500">Selesai</label>
         <input type="datetime-local" className="rounded border p-2" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} required />
-        <button className="rounded bg-biru p-2 font-semibold text-white">Buat</button>
+        <button className="rounded bg-teal p-2 font-semibold text-white">Buat</button>
       </form>
 
       <div className="space-y-2">

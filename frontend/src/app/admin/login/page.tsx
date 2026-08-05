@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow-lg">
-        <h1 className="text-center text-xl font-bold text-biru">Admin / Panitia</h1>
+        <h1 className="text-center text-xl font-bold text-teal">Admin / Panitia</h1>
         {error && <p className="rounded bg-red-50 p-2 text-sm text-red-600">{error}</p>}
         <input
           className="w-full rounded-lg border border-slate-300 p-3"
@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button disabled={loading} className="w-full rounded-lg bg-biru p-3 font-semibold text-white disabled:opacity-50">
+        <button disabled={loading} className="w-full rounded-lg bg-teal p-3 font-semibold text-white disabled:opacity-50">
           {loading ? 'Masuk...' : 'Masuk'}
         </button>
       </form>

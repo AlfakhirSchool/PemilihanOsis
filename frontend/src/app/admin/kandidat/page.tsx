@@ -63,13 +63,13 @@ export default function KandidatPage() {
         <input className="rounded border p-2" placeholder="Nama Wakil" value={form.nama_wakil} onChange={(e) => setForm({ ...form, nama_wakil: e.target.value })} />
         <input className="rounded border p-2" placeholder="URL Foto" value={form.foto_url} onChange={(e) => setForm({ ...form, foto_url: e.target.value })} />
         <textarea className="rounded border p-2" placeholder="Visi Misi" value={form.visi_misi} onChange={(e) => setForm({ ...form, visi_misi: e.target.value })} />
-        <button className="rounded bg-biru p-2 font-semibold text-white">Tambah Kandidat</button>
+        <button className="rounded bg-teal p-2 font-semibold text-white">Tambah Kandidat</button>
       </form>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {candidates.map((c) => (
           <div key={c.id} className="rounded-lg border bg-white p-4">
-            <p className="text-sm font-semibold text-oranye">No. {c.nomorUrut}</p>
+            <p className="text-sm font-semibold text-gold-dark">No. {c.nomorUrut}</p>
             <p className="font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
             <button onClick={() => remove(c.id)} className="mt-2 text-sm text-red-600">Hapus</button>
           </div>

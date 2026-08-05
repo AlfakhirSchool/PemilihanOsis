@@ -70,7 +70,7 @@ export default function KodePage() {
             required
           />
         </div>
-        <button disabled={loading} className="rounded bg-biru p-2 px-4 font-semibold text-white disabled:opacity-50">
+        <button disabled={loading} className="rounded bg-teal p-2 px-4 font-semibold text-white disabled:opacity-50">
           {loading ? 'Membuat...' : 'Generate'}
         </button>
       </form>

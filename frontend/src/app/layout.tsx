@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Pemilihan OSIS — Al Fakhir',
-  description: 'Sistem pencoblosan OSIS digital SD & SMP Islam Modern Al Fakhir',
+  title: 'OSALFA — Pemilihan Ketua OSIS',
+  description: 'OSALFA, sistem pencoblosan OSIS digital SD & SMP Islam Modern Al Fakhir',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -20,7 +20,7 @@ interface Progress {
   partisipasi_pct: number;
 }
 
-const BAR_COLORS = ['#1565C0', '#FF9800', '#00897B', '#7B1FA2', '#C62828'];
+const BAR_COLORS = ['#125E63', '#FAC760', '#0E464A', '#DA9407', '#5C4A1E'];
 
 export default function HitungSuaraPage() {
   const { elections, selectedId, select } = useElections();
@@ -81,7 +81,7 @@ export default function HitungSuaraPage() {
               <li key={v.vote_id}>
                 <button
                   onClick={() => reveal(v.vote_id)}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-oranye/10"
+                  className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-gold-dark/10"
                 >
                   Kode {v.code}
                 </button>
@@ -111,7 +111,7 @@ export default function HitungSuaraPage() {
               <div key={id}>
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">
-                    {t.nama} {id === leaderId && <span className="ml-1 rounded-full bg-oranye px-2 py-0.5 text-xs text-white">Unggul</span>}
+                    {t.nama} {id === leaderId && <span className="ml-1 rounded-full bg-gold-dark px-2 py-0.5 text-xs text-white">Unggul</span>}
                   </span>
                   <span className="text-slate-500">{t.count}</span>
                 </div>

@@ -1,4 +1,4 @@
-# Pemilihan OSIS Digital — Al Fakhir
+# OSALFA — Pemilihan OSIS Digital Al Fakhir
 
 Sistem pencoblosan ketua OSIS untuk SD & SMP Islam Modern Al Fakhir. Backend NestJS + Prisma,
 frontend Next.js + Tailwind, deploy sebagai CT `osis-voting` di Proxmox. Berdiri sendiri —

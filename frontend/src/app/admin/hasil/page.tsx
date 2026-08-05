@@ -40,7 +40,7 @@ export default function HasilPage() {
       <ElectionPicker elections={elections} selectedId={selectedId} onSelect={select} />
 
       {election?.status !== 'closed' && (
-        <p className="mb-4 rounded bg-oranye/10 p-3 text-sm text-oranye">
+        <p className="mb-4 rounded bg-gold-dark/10 p-3 text-sm text-gold-dark">
           Periode belum ditutup — hasil ini masih bisa berubah.
         </p>
       )}
@@ -67,7 +67,7 @@ export default function HasilPage() {
       <button
         onClick={exportCsv}
         disabled={election?.status !== 'closed'}
-        className="mt-4 rounded-lg bg-biru px-4 py-2 font-semibold text-white disabled:opacity-40"
+        className="mt-4 rounded-lg bg-teal px-4 py-2 font-semibold text-white disabled:opacity-40"
       >
         Export CSV
       </button>
