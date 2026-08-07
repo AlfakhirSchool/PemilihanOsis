@@ -36,7 +36,7 @@ export default function VotePage() {
   const [selected, setSelected] = useState<Candidate | null>(null);
 
   useEffect(() => {
-    if (localStorage.getItem('siswa_token')) loadElection();
+    if (localStorage.getItem('siswa_token')) loadElection(true);
   }, []);
 
   useEffect(() => {
@@ -45,14 +45,17 @@ export default function VotePage() {
     return () => clearTimeout(t);
   }, [stage]);
 
-  async function loadElection() {
+  async function loadElection(silent = false) {
     try {
       const el = await api.activeElection();
       setElection(el);
       const status = await api.electionStatus(el.id);
       setStage(status.sudah_vote ? 'sudah_vote' : 'pilih');
     } catch (e) {
-      setError((e as Error).message);
+      // Token basi (habis masa berlaku, atau sesi lama) — bersihin diam-diam kalau ini
+      // auto-load pas buka halaman, jangan nakut-nakutin dengan pesan error sebelum user ngapa-ngapain.
+      localStorage.removeItem('siswa_token');
+      if (!silent) setError((e as Error).message);
     }
   }
 
