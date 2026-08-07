@@ -10,7 +10,7 @@ import { CastVoteDto } from './dto/cast-vote.dto';
 export class VoteController {
   constructor(private readonly voteService: VoteService) {}
 
-  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Throttle({ default: { limit: 15, ttl: 60_000 } })
   @Post(':id/vote')
   cast(@Param('id') id: string, @Body() dto: CastVoteDto, @CurrentUser() user: { code: string }) {
     return this.voteService.cast(id, dto.candidate_id, user.code);
