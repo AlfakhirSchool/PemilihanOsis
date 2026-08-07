@@ -39,6 +39,12 @@ export default function VotePage() {
     if (localStorage.getItem('siswa_token')) loadElection();
   }, []);
 
+  useEffect(() => {
+    if (stage !== 'terkirim') return;
+    const t = setTimeout(nextVoter, 3000);
+    return () => clearTimeout(t);
+  }, [stage]);
+
   async function loadElection() {
     try {
       const el = await api.activeElection();
@@ -135,6 +141,7 @@ export default function VotePage() {
       <Center>
         <h1 className="text-2xl font-bold text-teal">Suara terkirim ✓</h1>
         <p className="mt-2 text-slate-500">Terima kasih sudah memilih.</p>
+        <p className="mt-1 text-xs text-slate-400">Otomatis kembali ke halaman kode dalam 3 detik...</p>
         <button onClick={nextVoter} className="mt-6 w-full rounded-lg bg-teal p-3 font-semibold text-white">
           Selesai — Pemilih Berikutnya
         </button>
