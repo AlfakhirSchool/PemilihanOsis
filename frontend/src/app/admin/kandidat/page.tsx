@@ -22,6 +22,8 @@ export default function KandidatPage() {
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -53,7 +55,9 @@ export default function KandidatPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError('');
+    setSubmitting(true);
     try {
       await api.createCandidate({
         election_id: selectedId,
@@ -67,12 +71,20 @@ export default function KandidatPage() {
       refresh();
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function remove(id: string) {
-    await api.deleteCandidate(id);
-    refresh();
+    if (removingId) return;
+    setRemovingId(id);
+    try {
+      await api.deleteCandidate(id);
+      refresh();
+    } finally {
+      setRemovingId(null);
+    }
   }
 
   return (
@@ -96,7 +108,9 @@ export default function KandidatPage() {
           )}
         </div>
         <textarea className="rounded border p-2" placeholder="Visi Misi" value={form.visi_misi} onChange={(e) => setForm({ ...form, visi_misi: e.target.value })} />
-        <button className="rounded bg-teal p-2 font-semibold text-white">Tambah Kandidat</button>
+        <button disabled={submitting || uploading} className="rounded bg-teal p-2 font-semibold text-white disabled:opacity-50">
+          {submitting ? 'Menambah...' : 'Tambah Kandidat'}
+        </button>
       </form>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -109,7 +123,9 @@ export default function KandidatPage() {
             <div>
               <p className="text-sm font-semibold text-gold-dark">No. {c.nomorUrut}</p>
               <p className="font-bold">{c.namaKetua}{c.namaWakil ? ` & ${c.namaWakil}` : ''}</p>
-              <button onClick={() => remove(c.id)} className="mt-2 text-sm text-red-600">Hapus</button>
+              <button onClick={() => remove(c.id)} disabled={removingId === c.id} className="mt-2 text-sm text-red-600 disabled:opacity-50">
+                {removingId === c.id ? 'Menghapus...' : 'Hapus'}
+              </button>
             </div>
           </div>
         ))}

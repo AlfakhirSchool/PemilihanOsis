@@ -28,6 +28,7 @@ export default function HitungSuaraPage() {
   const [pending, setPending] = useState<Pending[]>([]);
   const [revealed, setRevealed] = useState<Revealed[]>([]);
   const [tally, setTally] = useState<Record<string, { nama: string; count: number }>>({});
+  const [revealingId, setRevealingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -48,10 +49,16 @@ export default function HitungSuaraPage() {
   }
 
   async function reveal(voteId: string) {
-    const res = await api.reveal(selectedId, voteId);
-    setPending((prev) => prev.filter((v) => v.vote_id !== voteId));
-    setRevealed((prev) => [{ vote_id: voteId, code: res.code, candidate: res.candidate }, ...prev]);
-    refresh();
+    if (revealingId) return;
+    setRevealingId(voteId);
+    try {
+      const res = await api.reveal(selectedId, voteId);
+      setPending((prev) => prev.filter((v) => v.vote_id !== voteId));
+      setRevealed((prev) => [{ vote_id: voteId, code: res.code, candidate: res.candidate }, ...prev]);
+      refresh();
+    } finally {
+      setRevealingId(null);
+    }
   }
 
   const totalTallied = Object.values(tally).reduce((s, t) => s + t.count, 0);
@@ -85,9 +92,10 @@ export default function HitungSuaraPage() {
               <li key={v.vote_id}>
                 <button
                   onClick={() => reveal(v.vote_id)}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-gold-dark/10"
+                  disabled={revealingId === v.vote_id}
+                  className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-gold-dark/10 disabled:opacity-50"
                 >
-                  Kode {v.code}
+                  {revealingId === v.vote_id ? 'Membuka...' : `Kode ${v.code}`}
                 </button>
               </li>
             ))}

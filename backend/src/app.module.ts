@@ -9,7 +9,9 @@ import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    // Naik dari 60 — dashboard admin polling tiap 5s dari beberapa tab sekaligus gampang
+    // kepentok limit lama, dan sekarang req.ip udah benar per-visitor (lihat main.ts trust proxy).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 180 }]),
     PrismaModule,
     AuthModule,
     ElectionModule,
